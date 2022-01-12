@@ -1,6 +1,6 @@
 ---
 title: "DARE 1"
-author: "Anwesha Guha, Merly Klaas, Cassie Malcolm"
+author: "Anwesha Guha & Merly Klaas"
 date: "1/11/2022"
 output: html_document
 ---
@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(rio)
 library(here)
+library(tidyverse)
+library(dplyr)
 
 dare1 <- import(here("data", "EDLD_650_DARE_1.csv"))
 ```
@@ -19,8 +21,21 @@ For these tasks, no write up is required. The code you submit will be sufficient
 
 **A1.** Convert the raw counts of enrollment by race/ethnicity into percentages (i.e., divide the enrollment count for each ethno-racial category by total enrollment). For programming efficiency, can you use a function to do this task?
 
+```{r}
+dare1 <- dare1 %>%
+  mutate(across(c(10:15), ~ . / !! dare1$enroll * 100))
+```
+
 **A2.** Generate dichotomous policy predictor variables that take the value of 1 in state-year observations in which the policy is in place. Call them eval, class remove and suspension. They should take the value of 0 in years during which these policies were not in place. Also, generate a running time variable (run time) that reflects how far or
 close the state-year observation is from the implementation of higherstakes teacher evaluation and a variable that permits the effects of the evaluation policy to vary (linearly) over time (evalXyear). How will you deal with states that never implement evaluation? Do that too.
+
+```{r}
+dare1 <- dare1 %>% 
+  mutate(eval = ifelse(is.na(eval_year),0,1),
+         class_remove = ifelse(is.na(class_remove_year),0,1),
+         suspension = ifelse(is.na(suspension_year),0,1))
+```
+
 
 ## B. Understanding the Data and Descriptive Statistics (3 points)
 
