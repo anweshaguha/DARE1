@@ -33,7 +33,13 @@ close the state-year observation is from the implementation of higherstakes teac
 dare1 <- dare1 %>% 
   mutate(eval = ifelse(is.na(eval_year),0,1),
          class_remove = ifelse(is.na(class_remove_year),0,1),
-         suspension = ifelse(is.na(suspension_year),0,1))
+         suspension = ifelse(is.na(suspension_year),0,1),
+         runtime_classremove = eval_year - class_remove_year,
+         runtime_suspension = eval_year - suspension_year,
+         evalXclass_removeyear = eval * runtime_classremove,
+         evalXsuspyear = eval * runtime_suspension)
+
+
 ```
 
 
