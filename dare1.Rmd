@@ -60,12 +60,13 @@ dare1 <- dare1 %>%
 
 For the following tasks, give your best attempt at completing the analysis and write-up. If you are unable to conduct the programming or analysis, describe what you are attempting to do and what your results would mean.
 
+*Merly*
 **B1.** Inspect your data. What sorts of missingness exist within the data file? What sorts of missingness should concern you? Which do not? In this assignment, please restrict your sample to state-years with non-missing outcomes.
 ```{r}
 summary(dare1)
 ## figure out which variables with NAs to remove
 ```
-
+*AG*
 **B2.** Graphically display the distribution of the outcome data. What do you notice about the distribution of outcomes? Are there any actions, transformations or sensitivity tests you would like to conduct based on this evidence?
 ```{r}
 outcome_data <- dare1 %>% 
@@ -89,7 +90,7 @@ outcome_data %>%
   geom_histogram()
 ```
 
-
+*Merly*
 **B3.** What is the analytic sample from which you will draw your inferences? To what population are you drawing these inferences? For this analytic sample, reproduce Column 1 of Table 1 from Liebowitz, Porter & Bragg (2022) to create a summary of descriptive statistics for the following data elements. All of these statistics (except for state-year and year enrollment) should be weighted by the state-year population:
 
 * Mean state-year enrollment
@@ -107,7 +108,7 @@ outcome_data %>%
 * Objective-Classroom ODR rate
 
 ```{r}
-
+library(stargazer)
 ```
 
 
@@ -119,6 +120,7 @@ Describe the characteristics of your sample as you would report these statistics
 
 For the following tasks, give your best attempt at completing the analysis and write-up. If you are unable to conduct the programming or analysis, describe what you are attempting to do and what your results would mean.
 
+*AG*
 **C1.** Estimate the effects of the introduction of higher-stakes teacher evaluation reforms on Office Disciplinary Referrals. In one of your models, assume that the effects are constant and in another relax this assumption to allow the effects to differ (linearly) over time. Present these difference-in-differences estimates in a table and the associated writeup as you would report these results in an academic paper. Do you notice any important differences in these results and those reported in the original paper? If so, how would you consider addressing them (it is not necessary at this point for you to actually conduct the analysis,
 just describe approaches you might take)?
 
@@ -134,7 +136,7 @@ Allow effects to differ over time
 
 ```
 
-
+*Merly*
 **C2.** Liebowitz et al. (2022) conduct a broad set of robustness checks. For this DARE assignment, you will conduct two (2). First test whether the main results you present in Question C1 are robust to the introduction of potentially simultaneous discipline policy reforms. Present the table and associated write-up as you would report these results in an academic paper. Then select an additional robustness check (either from the paper or not) and present evidence on whether your findings are sensitive to this test.
 ```{r}
 
@@ -142,6 +144,7 @@ Allow effects to differ over time
 
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
+
 
 **C4. Optional Extension** Use an event-study approach to this difference-in-differences research design to estimate the effects of the introduction of higher-stakes teacher evaluation reforms on Office Disciplinary Referrals (ODRs). Present these findings in an event-study graph. Present the figure and associated write-up as you would report these results in an academic paper. Do you notice any important differences in these results and those reported in the original paper? If so, how would you consider addressing them (At this point, it is not necessary for you to actually conduct the analysis. Just describe approaches you
 might take.)?
