@@ -2,15 +2,17 @@
 title: "DARE 1"
 author: "Anwesha Guha & Merly Klaas"
 date: "1/11/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(rio)
-library(here)
-library(tidyverse)
-library(dplyr)
+library(pacman)
+
+# These are the packages you will need for the analyses 
+p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit)
 
 dare1 <- import(here("data", "EDLD_650_DARE_1.csv"))
 ```
@@ -63,9 +65,16 @@ For the following tasks, give your best attempt at completing the analysis and w
 *Merly*
 **B1.** Inspect your data. What sorts of missingness exist within the data file? What sorts of missingness should concern you? Which do not? In this assignment, please restrict your sample to state-years with non-missing outcomes.
 ```{r}
-summary(dare1)
+dare1 %>% 
+  drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective) %>% 
+missing_plot()
+dare1 %>% summary()
 ## figure out which variables with NAs to remove
 ```
+After excluding row with missing outcomes, there are only 470 observations left. Missing valuesfound in these following variable: Var eval_year = 71, class_remove_year = 374, suspension_year = 259, PBIS  = 129, based on the missingness pattern reflected in the plot above we see that missing data values do not relate to any other data in the dataset and there is no pattern to the actual values of the missing data themselves. Therefore we can conclude that this is Missing Completely at Random (MCAR). If there is specific pattern
+
+
+
 *AG*
 **B2.** Graphically display the distribution of the outcome data. What do you notice about the distribution of outcomes? Are there any actions, transformations or sensitivity tests you would like to conduct based on this evidence?
 ```{r}
@@ -108,7 +117,29 @@ outcome_data %>%
 * Objective-Classroom ODR rate
 
 ```{r}
-library(stargazer)
+stargazer(attitude)
+stargazer(dare1, header= FALSE, type = 'latex')
+```
+```{r mylatextable, results = "asis"}
+
+dare1 %>%
+  select(
+         `% low-income (FRPL)` = FRPL_percent,
+         `% Am. Indian/Alask. Native` = enroll_AM,
+         `% Asian/PI` = enroll_ASIAN,
+         `% Black` = enroll_BLACK,
+         `% Hispanic ` = enroll_HISP,
+         `% White` = enroll_WHITE,
+         `% Schools by Year Implementing PBIS` = PBIS,
+         `Classroom ODR Rate` = ODR_class,
+         `Other location ODR Rate` = ODR_other,
+         `Subjective-Classroom ODR rate` = ODR_subjective,
+         `Objective-Classroom ODR rate` = ODR_objective) %>% drop_na() %>%
+tbl_summary(statistic = list(all_continuous() ~ "{mean} ({sd})")) %>%
+  modify_footnote(
+    all_stat_cols() ~ "Mean (SD) per school"
+  ) %>%
+  modify_caption("**Table 1. Summary Statistics**") 
 ```
 
 
