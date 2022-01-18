@@ -8,11 +8,15 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
 library(pacman)
 
 # These are the packages you will need for the analyses 
-p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit, performance)
+p_load(here, rio, tidyverse, dplyr, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit)
 
 dare1 <- import(here("data", "EDLD_650_DARE_1.csv"))
 
@@ -116,11 +120,6 @@ Each ODR outcome data is right-skewed. Based on these histograms, we would sugge
 * Objective-Classroom ODR rate
 
 ```{r}
-stargazer(attitude)
-stargazer(dare1, header= FALSE, type = 'latex')
-```
-
-```{r mylatextable, results = "asis"}
 #Mean State-Year Enrollment
 dare1_clean %>% 
   group_by(state_abbrev) %>% #use abbrev for readability
@@ -150,12 +149,12 @@ dare1_clean %>%
          `Classroom ODR Rate` = ODR_class,
          `Other location ODR Rate` = ODR_other,
          `Subjective-Classroom ODR rate` = ODR_subjective,
-         `Objective-Classroom ODR rate` = ODR_objective) %>% drop_na() %>%
+         `Objective-Classroom ODR rate` = ODR_objective) %>%
 tbl_summary(statistic = list(all_continuous() ~ "{mean} ({sd})")) %>%
   modify_footnote(
     all_stat_cols() ~ "Mean (SD) per school"
   ) %>%
-  modify_caption("**Table 1. Summary Statistics**") 
+  modify_caption("**Summary Statistics**") 
 ```
 
 Describe the characteristics of your sample as you would report these statistics in an academic paper. How are the characteristics of the sample you will be using for this replication exercise different from the sample in Liebowitz, Porter & Bragg (2022)? How, if at all, do you anticipate this will affect your results?
@@ -353,8 +352,6 @@ modelsummary(list( rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6),
 
 
 ```
-
-Two different types of robustness checks were run with non-significant results. The first robustness check is to check the sensitivity to other policy reforms and the second one  is to verify that the evaluation policy implementation had no effect on ODRs from locations other than the classroom and on ODRs for behavioral infractions. The results confirm our main findings presented in C1 that higher-stakes teacher evaluation had no causal effect on the rates of disciplinary referrals.
 
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
