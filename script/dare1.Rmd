@@ -333,14 +333,20 @@ rc_b5 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + 
 summary(rc_b5)
 
 #Objective, controls, and time (B6)
-rc_b6 <- rc_b2 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+rc_b6 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
                         state_id + school_year,
                       data = dare1_clean,
                       weights = dare1_clean$enroll)
 summary(rc_b6)
 
-compare_performance(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6, rank = TRUE) %>%
-  print_md()
+modelsummary(list(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6),
+             coef_omit = "enroll*|FRPL",
+             gof_omit = "R2 Adj.|R2 Within|R2 Pseudo|AIC|BIC|Log.Lik.|Std.Errors|FE",
+              statistic = "{std.error} ({p.value})")
+
+```
+_Two different types of robustness checks were run with non-significant results. The first robustness check is to verify the sensitivity to other policy reforms and the second one is using CRCD suspension data as placebo tests. The results confirm our main findings presented in C1 that higher-stakes teacher evaluation had no causal effect on the rates of disciplinary referrals._
+
 ```
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
