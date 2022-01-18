@@ -12,9 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(pacman)
 
 # These are the packages you will need for the analyses 
-p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit)
+p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit, performance)
 
 dare1 <- import(here("data", "EDLD_650_DARE_1.csv"))
+
 ```
 
 ## A. Data Management Tasks (1 point)
@@ -66,19 +67,24 @@ For the following tasks, give your best attempt at completing the analysis and w
 **B1.** Inspect your data. What sorts of missingness exist within the data file? What sorts of missingness should concern you? Which do not? In this assignment, please restrict your sample to state-years with non-missing outcomes.
 ```{r}
 dare1 %>% 
-  drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective) %>% 
-missing_plot()
+  drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective)%>% 
+  missing_plot()
 dare1 %>% summary()
-## figure out which variables with NAs to remove
+
 ```
-After excluding row with missing outcomes, there are only 470 observations left. Missing valuesfound in these following variable: Var eval_year = 71, class_remove_year = 374, suspension_year = 259, PBIS  = 129, based on the missingness pattern reflected in the plot above we see that missing data values do not relate to any other data in the dataset and there is no pattern to the actual values of the missing data themselves. Therefore we can conclude that this is Missing Completely at Random (MCAR). If there is specific pattern
+```{r}
+dare1_clean <- dare1 %>% 
+  drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective)
+```
+
+After excluding row with missing outcomes, there are only 470 observations left. Missing valuesfound in these following variable: Var eval_year = 71, class_remove_year = 374, suspension_year = 259, PBIS  = 129, based on the missingness pattern reflected in the plot above we see that missing data values do not relate to any other data in the dataset and there is no pattern to the actual values of the missing data themselves. Therefore we can conclude that this is Missing Completely at Random (MCAR). We should be concerned if there is specific pattern of the missingness. 
 
 
 
 *AG*
 **B2.** Graphically display the distribution of the outcome data. What do you notice about the distribution of outcomes? Are there any actions, transformations or sensitivity tests you would like to conduct based on this evidence?
 ```{r}
-outcome_data <- dare1 %>% 
+outcome_data <- dare1_clean %>% 
   select(ODR_class, ODR_other, ODR_subjective, ODR_objective)
 # maybe pivot_longer --> values to "ODR"
 
@@ -123,8 +129,19 @@ stargazer(attitude)
 stargazer(dare1, header= FALSE, type = 'latex')
 ```
 ```{r mylatextable, results = "asis"}
+#Mean State-Year Enrollment
+dare1_clean %>% 
+  group_by(state_id) %>% 
+  summarise(mean_state = mean(enroll))
 
-dare1 %>%
+#Mean Year Enrollment
+dare1_clean %>% 
+   group_by(school_year) %>% 
+  summarise(mean_year = mean(enroll))
+
+#Summary statistics for demograpic infomation and outcome variables. 
+
+dare1_clean %>%
   select(
          `% low-income (FRPL)` = FRPL_percent,
          `% Am. Indian/Alask. Native` = enroll_AM,
@@ -204,10 +221,111 @@ Difference can stem from other controls not being accounted for.
 
 *Merly*
 **C2.** Liebowitz et al. (2022) conduct a broad set of robustness checks. For this DARE assignment, you will conduct two (2). First test whether the main results you present in Question C1 are robust to the introduction of potentially simultaneous discipline policy reforms. Present the table and associated write-up as you would report these results in an academic paper. Then select an additional robustness check (either from the paper or not) and present evidence on whether your findings are sensitive to this test.
+
+_The first set of robustness check is test the effect of evaluation policy implementation on rates on suspension from the Civil Right Data Collection (B11 - B13 of Figure 4)_
+
+**For ODR Class**
 ```{r}
+
+#Robustness check with CRDC (B11) 
+rc_b11 <- feols(ODR_class ~ suspension |
+              state_id + school_year, #default clustering on state id
+              data = dare1_clean,
+              weights = dare1_clean$enroll) 
+summary(rc_b11)
+
+#Robustness check with CRDC and Controls (B12)
+rc_b12 <- feols(ODR_class ~ suspension + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE |
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b12)
+                      
+#Robustness check with CRDC, controls, and Time (B13)
+
+rc_b13 <- feols(ODR_class ~ suspension + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b13)
+
 
 ```
 
+**For ODRs Subjective**
+```{r}
+#Robustness check with CRDC (B11)
+rc_b11s <- feols(ODR_subjective ~ suspension |
+              state_id + school_year, #default clustering on state id
+              data = dare1_clean,
+              weights = dare1_clean$enroll) 
+summary(rc_b11s)
+
+#Robustness check with CRDC and Controls (B12)
+rc_b12s <- feols(ODR_subjective ~ suspension + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE |
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b12s)
+                      
+#Robustness check with CRDC, controls, and Time (B13)
+
+rc_b13s <- feols(ODR_subjective ~ suspension + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b13s)
+
+```
+_Another Robustness check mentioned in the paper is to use ODRs from locations other than the classroom and ODRs for behavioral infraction that involved objective reasons to send students to the office (B1 - B6)_
+
+
+```{r results= 'asis'}
+#Other (B1)
+rc_b1 <- feols(ODR_other ~ eval|
+              state_id + school_year, #default clustering on state id
+              data = dare1_clean,
+              weights = dare1_clean$enroll) 
+summary(rc_b1)
+
+#Other and controls (B2)
+rc_b2 <- feols(ODR_other ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE |
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b2)
+
+#Other, controls, and time (B3)
+rc_b3 <- rc_b2 <- feols(ODR_other ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b3)
+
+#Objective (B4)
+rc_b4 <- feols(ODR_objective ~ eval|
+              state_id + school_year, #default clustering on state id
+              data = dare1_clean,
+              weights = dare1_clean$enroll) 
+summary(rc_b4)
+
+#Objective and controls (B5)
+rc_b5 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE |
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b5)
+
+#Objective, controls, and time (B6)
+rc_b6 <- rc_b2 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+                        state_id + school_year,
+                      data = dare1_clean,
+                      weights = dare1_clean$enroll)
+summary(rc_b6)
+
+compare_performance(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6, rank = TRUE) %>%
+  print_md()
+```
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
 
