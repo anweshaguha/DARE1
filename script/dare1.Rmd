@@ -39,22 +39,13 @@ dare1 <- dare1 %>%
          TRUE ~ 0)) %>% 
   mutate(suspension = case_when(suspension_year>=school_year ~ 1,
          TRUE ~ 0))
-
-#         mutate(eval = ifelse(is.na(eval_year),0,1)) %>% 
-#         mutate(class_remove = ifelse(is.na(class_remove_year),0,1)) %>% 
-#         mutate(suspension = ifelse(is.na(suspension_year),0,1)) %>% 
-#         runtime_classremove = eval_year - class_remove_year,
-#         runtime_suspension = eval_year - suspension_year,
-#         evalXclass_removeyear = eval * runtime_classremove,
-#         evalXsuspyear = eval * runtime_suspension)
-
-
 ```
 
 Also, generate a running time variable (run time) that reflects how far or close the state-year observation is from the implementation of higher stakes teacher evaluation and a variable that permits the effects of the evaluation policy to vary (linearly) over time (evalXyear). How will you deal with states that never implement evaluation? Do that too.
 ```{r}
 dare1 <- dare1 %>% 
-  mutate(run_time = ifelse(is.na(eval_year), -99, school_year-eval_year)) %>% # -99 for states that never implement evaluation
+  mutate(run_time = ifelse(is.na(eval_year), -99, school_year-eval_year)) %>% 
+  # -99 for states that never implement evaluation
   mutate(evalXyear = eval*run_time)
 ```
 
@@ -63,51 +54,51 @@ dare1 <- dare1 %>%
 
 For the following tasks, give your best attempt at completing the analysis and write-up. If you are unable to conduct the programming or analysis, describe what you are attempting to do and what your results would mean.
 
-*Merly*
 **B1.** Inspect your data. What sorts of missingness exist within the data file? What sorts of missingness should concern you? Which do not? In this assignment, please restrict your sample to state-years with non-missing outcomes.
 ```{r}
 dare1 %>% 
   drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective)%>% 
   missing_plot()
 dare1 %>% summary()
-
 ```
+
+
 ```{r}
 dare1_clean <- dare1 %>% 
   drop_na(ODR_class, ODR_objective, ODR_other, ODR_objective)
 ```
 
-After excluding row with missing outcomes, there are only 470 observations left. Missing valuesfound in these following variable: Var eval_year = 71, class_remove_year = 374, suspension_year = 259, PBIS  = 129, based on the missingness pattern reflected in the plot above we see that missing data values do not relate to any other data in the dataset and there is no pattern to the actual values of the missing data themselves. Therefore we can conclude that this is Missing Completely at Random (MCAR). We should be concerned if there is specific pattern of the missingness. 
+After excluding row with missing outcomes, there are only 470 observations left. Missing values found in these following variable: Var eval_year = 71, class_remove_year = 374, suspension_year = 259, PBIS  = 129, based on the missingness pattern reflected in the plot above we see that missing data values do not relate to any other data in the dataset and there is no pattern to the actual values of the missing data themselves. Therefore we can conclude that this is Missing Completely at Random (MCAR). We should be concerned if there is specific pattern of the missingness. 
 
 
-
-*AG*
 **B2.** Graphically display the distribution of the outcome data. What do you notice about the distribution of outcomes? Are there any actions, transformations or sensitivity tests you would like to conduct based on this evidence?
 ```{r}
-outcome_data <- dare1_clean %>% 
-  select(ODR_class, ODR_other, ODR_subjective, ODR_objective)
-# maybe pivot_longer --> values to "ODR"
+#  pivot_longer --> values to "ODR" could be another approach
 
-outcome_data %>% 
+dare1_clean %>% 
   ggplot(aes(ODR_subjective)) +
-  geom_histogram()
+  geom_histogram() +
+  theme_bw()
 
-outcome_data %>% 
+dare1_clean%>% 
   ggplot(aes(ODR_objective)) +
-  geom_histogram()
+  geom_histogram()+
+  theme_bw()
 
-outcome_data %>% 
+dare1_clean %>% 
   ggplot(aes(ODR_class)) +
-  geom_histogram()
+  geom_histogram()+
+  theme_bw()
 
-outcome_data %>% 
+dare1_clean %>% 
   ggplot(aes(ODR_other)) +
-  geom_histogram()
+  geom_histogram()+
+  theme_bw()
 ```
 
-Each ODR outcome data is right-skewed.
+Each ODR outcome data is right-skewed. Based on these histograms, we would suggest 1) testing for normality (applying transformations as needed) and 2) removing outliers, particularly for ODR_objective and ODR_class.
 
-*Merly*
+
 **B3.** What is the analytic sample from which you will draw your inferences? To what population are you drawing these inferences? For this analytic sample, reproduce Column 1 of Table 1 from Liebowitz, Porter & Bragg (2022) to create a summary of descriptive statistics for the following data elements. All of these statistics (except for state-year and year enrollment) should be weighted by the state-year population:
 
 * Mean state-year enrollment
@@ -128,10 +119,11 @@ Each ODR outcome data is right-skewed.
 stargazer(attitude)
 stargazer(dare1, header= FALSE, type = 'latex')
 ```
+
 ```{r mylatextable, results = "asis"}
 #Mean State-Year Enrollment
 dare1_clean %>% 
-  group_by(state_id) %>% 
+  group_by(state_abbrev) %>% #use abbrev for readability
   summarise(mean_state = mean(enroll))
 
 #Mean Year Enrollment
@@ -139,7 +131,12 @@ dare1_clean %>%
    group_by(school_year) %>% 
   summarise(mean_year = mean(enroll))
 
-#Summary statistics for demograpic infomation and outcome variables. 
+#Mean State-Year Enrollment
+dare1_clean %>% 
+  group_by(state_abbrev, school_year) %>% 
+  summarise(mean_state = mean(enroll))
+
+#Summary statistics for demographic information and outcome variables. 
 
 dare1_clean %>%
   select(
@@ -161,8 +158,9 @@ tbl_summary(statistic = list(all_continuous() ~ "{mean} ({sd})")) %>%
   modify_caption("**Table 1. Summary Statistics**") 
 ```
 
-
 Describe the characteristics of your sample as you would report these statistics in an academic paper. How are the characteristics of the sample you will be using for this replication exercise different from the sample in Liebowitz, Porter & Bragg (2022)? How, if at all, do you anticipate this will affect your results?
+
+This sample primarily differs at level of detail. This sample is at the year and state level while the Liebowitz, Porter & Bragg include school and grade level, as well. As a result, the characteristics of the above variables will look different: for example, one school may have much higher FRPL than another, but that variation may look different year to year.
 
 **B4. Optional Extension** Plot the average classroom (ODR class) and classroom-subjective ODRs (ODR subjective) by how close the stateyear observation is to the implementation of the teacher evaluation policy for the states that implemented evaluation reform. (Note: this is similar to Figure 2 in the original paper ). What do you notice about the raw outcome data plotted against the secular trend? Are there any actions, transformations or sensitivity tests you would like to conduct based on this evidence? Why do we stress plotting these raw averages only for states that implemented evaluation reform? How would including these states alter the interpretation of this figure?
 
@@ -170,7 +168,6 @@ Describe the characteristics of your sample as you would report these statistics
 
 For the following tasks, give your best attempt at completing the analysis and write-up. If you are unable to conduct the programming or analysis, describe what you are attempting to do and what your results would mean.
 
-*AG*
 **C1.** Estimate the effects of the introduction of higher-stakes teacher evaluation reforms on Office Disciplinary Referrals. In one of your models, assume that the effects are constant and in another relax this assumption to allow the effects to differ (linearly) over time. Present these difference-in-differences estimates in a table and the associated writeup as you would report these results in an academic paper. Do you notice any important differences in these results and those reported in the original paper? If so, how would you consider addressing them (it is not necessary at this point for you to actually conduct the analysis, just describe approaches you might take)?
 
 For classroom ODRs:
@@ -187,7 +184,7 @@ summary(mod_class_constant)
 
 Allow effects to differ over time
 ```{r}
-mod_class_time <- feols(ODR_class ~ evalXyear |
+mod_class_time <- feols(ODR_class ~ eval |
               state_id + school_year,
               data = dare1,
               vcov = ~school_year^state_id,
@@ -208,7 +205,7 @@ summary(mod_subj_constant)
 
 Allow effects to differ over time
 ```{r}
-mod_subj_time <- feols(ODR_subjective ~ evalXyear |
+mod_subj_time <- feols(ODR_subjective ~ eval |
               state_id + school_year,
               data = dare1,
               vcov = ~school_year^state_id,
@@ -216,10 +213,29 @@ mod_subj_time <- feols(ODR_subjective ~ evalXyear |
 summary(mod_subj_time)
 ```
 
+```{r}
+results <- list()
+results[["1"]] <- mod_class_constant
+results[["2"]] <- mod_class_time
+results[["3"]] <- mod_subj_constant
+results[["4"]] <- mod_subj_time
 
-Difference can stem from other controls not being accounted for.
+row <- tribble(~term,          ~'Class, Constant Effects',  ~'Class, Time Effects', ~'Subj. Constant Effects', ~'Subj, Time Effects')
+attr(row, 'position') <- c(7)
 
-*Merly*
+modelsummary(results, 
+             title = "Table X. Effects of Teacher Eval Reforms on Discipline Referrals",
+             stars=T,
+             estimate = "{estimate}{stars}",
+             gof_omit= "Adj|Pseudo|Log|Within|AIC|BIC|FE|Std",
+             fourparttable= T,
+             notes = c("Notes: 1 - Class, Constant Effects; 2 - Class, Time Effects, 3 - Subj. Constant Effects, 4 - Subj, Time Effects"),
+             type='pdf')
+```
+
+
+Differences between the values in the table above and the paper can be come from controls not being accounted for in this model. Since the authors of the paper mention preferring a simpler model, a simpler model was used here. Secondly, these results are at the state-year level, which is a different sample than at the school-year level. As a result, differences are expected and can be remedied with more data (or a more advanced analysis).
+
 **C2.** Liebowitz et al. (2022) conduct a broad set of robustness checks. For this DARE assignment, you will conduct two (2). First test whether the main results you present in Question C1 are robust to the introduction of potentially simultaneous discipline policy reforms. Present the table and associated write-up as you would report these results in an academic paper. Then select an additional robustness check (either from the paper or not) and present evidence on whether your findings are sensitive to this test.
 
 _The first set of robustness check is test the effect of evaluation policy implementation on rates on suspension from the Civil Right Data Collection (B11 - B13 of Figure 4)_
@@ -328,6 +344,8 @@ compare_performance(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_
 ```
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
+
+According to this analyses, there is insufficient evidence to suggest that relationship between the introduction of higher-stakes teacher evaluation reforms on Office Disciplinary Referrals is significant.
 
 
 **C4. Optional Extension** Use an event-study approach to this difference-in-differences research design to estimate the effects of the introduction of higher-stakes teacher evaluation reforms on Office Disciplinary Referrals (ODRs). Present these findings in an event-study graph. Present the figure and associated write-up as you would report these results in an academic paper. Do you notice any important differences in these results and those reported in the original paper? If so, how would you consider addressing them (At this point, it is not necessary for you to actually conduct the analysis. Just describe approaches you
