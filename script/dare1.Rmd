@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(pacman)
 
 # These are the packages you will need for the analyses 
-p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit, performance)
+p_load(here, rio, tidyverse, dplyr, stargazer, fixest, DT, modelsummary, haven , gtsummary, naniar, finalfit, performance, modelsummary)
 
 dare1 <- import(here("data", "EDLD_650_DARE_1.csv"))
 
@@ -125,20 +125,17 @@ Each ODR outcome data is right-skewed.
 * Objective-Classroom ODR rate
 
 ```{r}
-stargazer(attitude)
-stargazer(dare1, header= FALSE, type = 'latex')
-```
-```{r mylatextable, results = "asis"}
 #Mean State-Year Enrollment
-dare1_clean %>% 
+state_year_enrl <- dare1_clean %>% 
   group_by(state_id) %>% 
   summarise(mean_state = mean(enroll))
-
+state_year_enrl
 #Mean Year Enrollment
+year_enrl <-
 dare1_clean %>% 
    group_by(school_year) %>% 
   summarise(mean_year = mean(enroll))
-
+year_enrl
 #Summary statistics for demograpic infomation and outcome variables. 
 
 dare1_clean %>%
@@ -156,7 +153,7 @@ dare1_clean %>%
          `Objective-Classroom ODR rate` = ODR_objective) %>% drop_na() %>%
 tbl_summary(statistic = list(all_continuous() ~ "{mean} ({sd})")) %>%
   modify_footnote(
-    all_stat_cols() ~ "Mean (SD) per school"
+    all_stat_cols() ~ "Mean (SD)l"
   ) %>%
   modify_caption("**Table 1. Summary Statistics**") 
 ```
@@ -222,7 +219,7 @@ Difference can stem from other controls not being accounted for.
 *Merly*
 **C2.** Liebowitz et al. (2022) conduct a broad set of robustness checks. For this DARE assignment, you will conduct two (2). First test whether the main results you present in Question C1 are robust to the introduction of potentially simultaneous discipline policy reforms. Present the table and associated write-up as you would report these results in an academic paper. Then select an additional robustness check (either from the paper or not) and present evidence on whether your findings are sensitive to this test.
 
-_The first set of robustness check is test the effect of evaluation policy implementation on rates on suspension from the Civil Right Data Collection (B11 - B13 of Figure 4)_
+**The first set of robustness check is test the effect of evaluation policy implementation on rates on suspension from the Civil Right Data Collection (B11 - B13 of Figure 4)**
 
 **For ODR Class**
 ```{r}
@@ -277,7 +274,7 @@ rc_b13s <- feols(ODR_subjective ~ suspension + FRPL_percent + enroll_OTHER + enr
 summary(rc_b13s)
 
 ```
-_Another Robustness check mentioned in the paper is to use ODRs from locations other than the classroom and ODRs for behavioral infraction that involved objective reasons to send students to the office (B1 - B6)_
+**Another Robustness check mentioned in the paper is to use ODRs from locations other than the classroom and ODRs for behavioral infraction that involved objective reasons to send students to the office (B1 - B6)**
 
 
 ```{r results= 'asis'}
@@ -317,15 +314,20 @@ rc_b5 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + 
 summary(rc_b5)
 
 #Objective, controls, and time (B6)
-rc_b6 <- rc_b2 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
+rc_b6 <- feols(ODR_objective ~ eval + FRPL_percent + enroll_OTHER + enroll_AM + enroll_AM + enroll_HISP + enroll_ASIAN + enroll_BLACK + enroll_WHITE + run_time|
                         state_id + school_year,
                       data = dare1_clean,
                       weights = dare1_clean$enroll)
 summary(rc_b6)
 
-compare_performance(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6, rank = TRUE) %>%
-  print_md()
+modelsummary(list(rc_b11, rc_b12,rc_b13, rc_b11s, rc_b12s, rc_b13s, rc_b1, rc_b2, rc_b3, rc_b4, rc_b5, rc_b6),
+             coef_omit = "enroll*|FRPL",
+             gof_omit = "R2 Adj.|R2 Within|R2 Pseudo|AIC|BIC|Log.Lik.|Std.Errors|FE",
+              statistic = "{std.error} ({p.value})")
+
 ```
+_Two different types of robustness checks were run with non-significant results. The first robustness check is to verify the sensitivity to other policy reforms and the second one is using CRCD suspension data as placebo tests. The results confirm our main findings presented in C1 that higher-stakes teacher evaluation had no causal effect on the rates of disciplinary referrals._
+
 
 **C3.** Write a discussion paragraph in which you present the substantive conclusions of your results about the effects of the introduction of higher-stakes teacher evaluation on ODRs.
 
